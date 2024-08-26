@@ -137,7 +137,7 @@ async def start_forward(bot, userid, skip):
         except Exception as e:
             logger.exception(e)
             await active_msg.edit(f'<b>Error:</b> <code>{e}</code>')
-            asyncio.create_task(delete_message_later(bot, int(userid), error_msg.id, 30 * 60))
+            asyncio.create_task(delete_message_later(bot, int(userid), final_msg.id, 30 * 60))
         else:
             await db.update_any(userid, 'on_process', False)
             await db.update_any(userid, 'is_complete', True)
