@@ -5,10 +5,18 @@ from pyrogram.errors import FloodWait
 from pyrogram import enums
 import logging
 import asyncio
+import datetime
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 lock = asyncio.Lock()
+
+async def delete_message_later(bot, chat_id, message_id, delay_seconds):
+    await asyncio.sleep(delay_seconds)
+    try:
+        await bot.delete_messages(chat_id, message_id)
+    except Exception as e:
+        logger.error(f"Failed to delete message: {e}")
 
 async def start_forward(bot, userid, skip):
     util = temp_utils.UTILS.get(int(userid))
@@ -39,6 +47,8 @@ async def start_forward(bot, userid, skip):
         text="<b>Starting Forward Process...</b>",
         reply_markup=InlineKeyboardMarkup(btn)
     )
+
+    asyncio.create_task(delete_message_later(bot, int(userid), active_msg.id, 30 * 60))
 
     skipped = int(skip)
     total = 0
@@ -110,6 +120,7 @@ async def start_forward(bot, userid, skip):
                             text=f"<b>Forwarding on progress...\n\nTotal: {total}\nSkipped: {skipped}\nForwarded: {forwarded}\nEmpty Message: {empty}\nNot Media: {notmedia}\nUnsupported Media: {unsupported}\nMessages Left: {left}\n\nStatus: {status}</b>",
                             reply_markup=InlineKeyboardMarkup(btn)
                         )
+                        asyncio.create_task(delete_message_later(bot, int(userid), new_msg.id, 30 * 60))
                         await asyncio.sleep(delay)
                         batch_count = 0
 
@@ -126,10 +137,12 @@ async def start_forward(bot, userid, skip):
         except Exception as e:
             logger.exception(e)
             await active_msg.edit(f'<b>Error:</b> <code>{e}</code>')
+            asyncio.create_task(delete_message_later(bot, int(userid), error_msg.id, 30 * 60))
         else:
             await db.update_any(userid, 'on_process', False)
             await db.update_any(userid, 'is_complete', True)
             await active_msg.edit(f"<b>Successfully Completed Forward Process !\n\nTotal: {total}\nSkipped: {skipped}\nForwarded: {forwarded}\nEmpty Message: {empty}\nNot Media: {notmedia}\nUnsupported Media: {unsupported}\nMessages Left: {left}\n\nStatus: {status}</b>")
+            asyncio.create_task(delete_message_later(bot, int(userid), final_msg.id, 30 * 60))
 
 async def gather_task(bot, users):
     tasks = []
