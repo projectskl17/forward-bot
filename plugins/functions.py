@@ -1,14 +1,21 @@
+import asyncio
 from utils import temp_utils
 from database.data_base import db
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from pyrogram.errors import FloodWait
 from pyrogram import enums
 import logging
-import asyncio
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 lock = asyncio.Lock()
+
+async def delete_message_after_delay(bot, chat_id, message_id, delay=1800):
+    await asyncio.sleep(delay)  # 30 minutes
+    try:
+        await bot.delete_messages(chat_id=chat_id, message_ids=[message_id])
+    except Exception as e:
+        logger.error(f"Failed to delete message: {e}")
 
 async def start_forward(bot, userid, skip):
     util = temp_utils.UTILS.get(int(userid))
@@ -39,6 +46,9 @@ async def start_forward(bot, userid, skip):
         text="<b>Starting Forward Process...</b>",
         reply_markup=InlineKeyboardMarkup(btn)
     )
+
+    # Create a task to delete the active message after 30 minutes
+    asyncio.create_task(delete_message_after_delay(bot, int(userid), active_msg.message_id))
 
     skipped = int(skip)
     total = 0
