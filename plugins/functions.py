@@ -96,7 +96,6 @@ async def start_forward(bot, userid, skip):
 
                     try:
                         cmsg = await msg.copy(chat_id=int(TARGET_DB), caption="")
-                        asyncio.create_task(delete_message_after_delay(bot, int(TARGET_DB), cmsg.id))
                         forwarded += 1
                         await asyncio.sleep(1)
                     except FloodWait as e:
